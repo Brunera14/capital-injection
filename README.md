@@ -66,6 +66,8 @@ Desenvolvido ao longo de PI-I, PI-II e PI-III, com as seguintes entregas já con
 - [ ] Vídeo demonstrativo
 - [ ] Apresentação final
 
+O acompanhamento das tarefas é feito no [GitHub Projects] https://github.com/users/Brunera14/projects/2/views/1
+
 ## Estrutura do repositório
 
 ```
