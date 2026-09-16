@@ -1,8 +1,9 @@
 # Capital Injection
 
-**Calculadora de Aporte Inteligente** — rebalanceamento de carteira de investimentos pelo método *sem venda*.
+**Calculadora de Aporte Inteligente**: rebalanceamento de carteira de investimentos pelo método *sem venda*.
 
-Projeto Integrador IV — Ciência da Computação — CEUB
+Projeto Integrador IV, Ciência da Computação, CEUB
+
 Bruno Rodrigues Barcelos de Oliveira
 
 ---
@@ -11,26 +12,40 @@ Bruno Rodrigues Barcelos de Oliveira
 
 O investidor comum perde tempo e erra ao decidir manualmente onde alocar o aporte do mês.
 O **Capital Injection** resolve isso: o usuário informa quanto tem disponível e quais ativos possui,
-e o sistema devolve o **ranking de prioridade** e o **valor exato de compra por ativo** — equilibrando
+e o sistema devolve o **ranking de prioridade** e o **valor exato de compra por ativo**, equilibrando
 a carteira sem nunca recomendar a venda de nenhuma posição.
 
-## Arquitetura
+## Arquitetura atual
 
-Solução **low code**, por decisão de projeto:
+A partir do PI4, o projeto migrou de uma solução low code (Excel e Power BI) para uma aplicação em código, rodando localmente no computador do usuário:
+
+| Camada | Tecnologia |
+|---|---|
+| Motor de cálculo e backend | Python |
+| Interface | HTML, CSS e JavaScript, servidos localmente |
+| Persistência de dados | SQLite (arquivo local, sem servidor externo) |
+| Cotações em tempo real | API brapi.dev |
+
+O motivo da mudança de arquitetura, incluindo o que foi avaliado e descartado (Supabase, entre outros), está documentado no [ADR 001](https://github.com/Brunera14/capital-injection/issues/88).
+
+## Arquitetura anterior (histórico)
+
+Até o PI3, o projeto foi desenvolvido como solução low code:
 
 | Camada | Tecnologia |
 |---|---|
 | Motor de cálculo | Microsoft Excel (fórmulas nativas) |
 | Cotações em tempo real | Função nativa de dados financeiros do Excel |
-| Visualização / dashboard | Power BI (DAX + Power Query M) |
+| Visualização e dashboard | Power BI (DAX e Power Query M) |
 | Prototipação de interface | Figma |
-| Gestão do projeto | GitHub Projects (Kanban) |
 
 Protótipo interativo no Figma: [Design Screens for Capital Injection](https://www.figma.com/community/file/1629261141093957791/design-screens-for-capital-injection)
 
-## Documentação
+Essa fase não foi apagada, só encerrada. A pesquisa, as regras de negócio e as personas continuam valendo para a versão em código.
 
-A documentação completa do sistema está em [`/docs`](docs/):
+## Documentação (fase anterior, Excel e Power BI)
+
+A documentação completa dessa fase está em [`/docs`](docs/):
 
 | Seção | Conteúdo |
 |---|---|
@@ -40,40 +55,50 @@ A documentação completa do sistema está em [`/docs`](docs/):
 | [4. Arquitetura e Integrações](docs/04-arquitetura.md) | Tecnologias, integrações e ALM |
 | [5. Interface e Prototipação](docs/05-interface-prototipacao.md) | Telas de alta fidelidade |
 | [6. Planos de Teste](docs/06-planos-de-teste.md) | Cenários e matriz de teste |
-| [7. Implementação — MVP](docs/07-implementacao-mvp.md) | Motor de cálculo |
+| [7. Implementação (MVP)](docs/07-implementacao-mvp.md) | Motor de cálculo |
 | [8. Pesquisa de Campo](docs/08-pesquisa-de-campo.md) | Análise dos dados coletados |
 | [9. Personas](docs/09-personas.md) | Três perfis validados |
 | [10. Gestão Ágil](docs/10-gestao-agil.md) | Seis sprints e retrospectiva |
 
+As regras de negócio, a pesquisa de campo e as personas seguem válidas para a fase atual em código.
+
 ## Estado do projeto
 
-Desenvolvido ao longo de PI-I, PI-II e PI-III, com as seguintes entregas já consolidadas:
+**PI-I a PI-III (concluído, solução low code)**
 
-- Documentação do sistema completa (29 páginas)
-- Pesquisa de campo com respondentes reais e três personas validadas
-- Protótipos de alta fidelidade no Figma
-- Motor de cálculo funcional, com todos os cenários de teste aprovados
-- Integração de cotações automatizada
-- Seis sprints registradas, com Daily Scrum e retrospectiva
+| Entrega | Situação |
+|---|---|
+| Documentação do sistema completa (29 páginas) | Feita |
+| Pesquisa de campo com respondentes reais e três personas validadas | Feita |
+| Protótipos de alta fidelidade no Figma | Feita |
+| Motor de cálculo funcional, com todos os cenários de teste aprovados | Feita |
+| Integração de cotações automatizada | Feita |
+| Seis sprints registradas, com Daily Scrum e retrospectiva | Feita |
 
-## Roadmap — PI4
+**PI4 (em andamento, migração para código)**
 
-- [ ] Migrar a documentação para este repositório
-- [ ] Migrar backlog e sprints para o GitHub Projects
-- [ ] Construir o dashboard em Power BI
-- [ ] Plano de contingência
-- [ ] Rodada final de testes
-- [ ] Vídeo demonstrativo
-- [ ] Apresentação final
+| Entrega | Situação |
+|---|---|
+| Decisão de arquitetura documentada em ADR ([issue #88](https://github.com/Brunera14/capital-injection/issues/88)) | Feita |
+| GitHub reorganizado, board e milestones reestruturados a partir da Sprint 09 | Feita |
 
-O acompanhamento das tarefas é feito no [GitHub Projects] https://github.com/users/Brunera14/projects/2/views/1
+## Roadmap do PI4
+
+| Sprint | Foco | Vencimento |
+|---|---|---|
+| Sprint 09 | Reestruturação e GitHub | 29/09/2026 |
+| Sprint 10 | Desenvolvimento (motor de cálculo e cotações) | 20/10/2026 |
+| Sprint 11 | Final de desenvolvimento (interface e histórico) | 10/11/2026 |
+| Sprint 12 | Finalização e apresentação | 03/12/2026 |
+
+O acompanhamento das tarefas é feito no [GitHub Projects](https://github.com/users/Brunera14/projects/2).
 
 ## Estrutura do repositório
 
 ```
 .
-├── docs/          documentação do sistema (Markdown)
+├── docs/          documentação da fase Excel e Power BI (Markdown)
 │   └── img/       figuras e capturas de tela
-├── src/           motor de cálculo e camada de visualização
+├── src/           motor de cálculo e camada de visualização (Python e SQLite), em construção na Sprint 09
 └── README.md
 ```
