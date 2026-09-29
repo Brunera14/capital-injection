@@ -16,3 +16,6 @@ __pycache__/
 # Segredos e dados locais
 .env
 *.db
+
+# Configuracao local do Claude Code
+.claude/settings.local.json
