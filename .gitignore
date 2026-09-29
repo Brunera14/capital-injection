@@ -6,3 +6,12 @@
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Segredos e dados locais
+.env
+*.db
