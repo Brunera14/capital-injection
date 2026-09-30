@@ -4,6 +4,7 @@ from decimal import Decimal, InvalidOperation
 from flask import Flask, g, jsonify, render_template, request
 
 import banco
+import cotacao
 from calculo import calcular_aporte, APORTAR
 
 DB_PATH = "capital_injection.db"
@@ -160,6 +161,12 @@ def api_consolidar():
         return jsonify({"erro": "Falha ao consolidar o aporte: " + str(erro)}), 500
 
     return jsonify({"mensagem": "Aporte consolidado com sucesso."})
+
+
+@app.route("/api/cotacoes/atualizar", methods=["POST"])
+def api_atualizar_cotacoes():
+    resultado = cotacao.atualizar_cotacoes(get_conn())
+    return jsonify(resultado)
 
 
 @app.route("/api/historico", methods=["GET"])

@@ -211,8 +211,28 @@ async function consolidar() {
   await recalcular();
 }
 
+async function atualizarCotacoes() {
+  const botao = document.getElementById("btn-atualizar-cotacoes");
+  const aviso = document.getElementById("aviso-cotacao");
+  botao.disabled = true;
+  aviso.textContent = "Buscando cotacoes...";
+
+  const resp = await fetch("/api/cotacoes/atualizar", { method: "POST" });
+  const dados = await resp.json();
+  botao.disabled = false;
+
+  aviso.textContent = dados.aviso || "";
+  if (dados.atualizados && dados.atualizados.length > 0) {
+    aviso.textContent += (aviso.textContent ? " " : "") + "Atualizados: " + dados.atualizados.join(", ") + ".";
+  }
+
+  await carregarCarteira();
+  await recalcular();
+}
+
 document.getElementById("btn-calcular").addEventListener("click", recalcular);
 document.getElementById("btn-consolidar").addEventListener("click", consolidar);
+document.getElementById("btn-atualizar-cotacoes").addEventListener("click", atualizarCotacoes);
 document.getElementById("form-ativo").addEventListener("submit", adicionarAtivo);
 document.getElementById("input-aporte").addEventListener("change", recalcular);
 
