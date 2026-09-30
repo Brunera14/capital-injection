@@ -1,6 +1,5 @@
 from decimal import Decimal
 
-import pytest
 import requests
 
 import banco
@@ -20,6 +19,10 @@ class RespostaFalsa:
         return self._dados
 
 
+def resposta_com_preco(preco):
+    return RespostaFalsa({"results": [{"symbol": "ITUB4", "regularMarketPrice": preco}]})
+
+
 def ativo(ticker, tipo, qtd, preco, pct_alvo, preco_origem="api"):
     return {
         "ticker": ticker,
@@ -36,21 +39,30 @@ def banco_de_teste(tmp_path):
     return banco.conectar(str(tmp_path / "teste.db"))
 
 
-def test_buscar_cotacoes_sucesso(monkeypatch):
+def test_buscar_cotacao_sucesso(monkeypatch):
     def get_falso(url, headers=None, timeout=None):
-        assert "ITUB4" in url
-        return RespostaFalsa({
-            "results": [
-                {"symbol": "ITUB4", "regularMarketPrice": 32.5},
-                {"symbol": "VALE3", "regularMarketPrice": 62.0},
-            ]
-        })
+        assert url == cotacao.URL_BASE + "ITUB4"
+        return resposta_com_preco(32.5)
+
+    monkeypatch.setattr(requests, "get", get_falso)
+
+    assert cotacao.buscar_cotacao("ITUB4") == Decimal("32.5")
+
+
+def test_buscar_cotacoes_faz_uma_chamada_por_ticker(monkeypatch):
+    chamadas = []
+
+    def get_falso(url, headers=None, timeout=None):
+        ticker = url.replace(cotacao.URL_BASE, "")
+        chamadas.append(ticker)
+        return RespostaFalsa({"results": [{"symbol": ticker, "regularMarketPrice": 10.0}]})
 
     monkeypatch.setattr(requests, "get", get_falso)
 
     precos = cotacao.buscar_cotacoes(["ITUB4", "VALE3"])
 
-    assert precos == {"ITUB4": Decimal("32.5"), "VALE3": Decimal("62.0")}
+    assert chamadas == ["ITUB4", "VALE3"]
+    assert precos == {"ITUB4": Decimal("10.0"), "VALE3": Decimal("10.0")}
 
 
 def test_buscar_cotacoes_lista_vazia_nao_chama_a_api(monkeypatch):
@@ -62,24 +74,27 @@ def test_buscar_cotacoes_lista_vazia_nao_chama_a_api(monkeypatch):
     assert cotacao.buscar_cotacoes([]) == {}
 
 
-def test_buscar_cotacoes_falha_de_rede(monkeypatch):
+def test_buscar_cotacoes_ignora_ticker_que_falha_e_mantem_os_outros(monkeypatch):
     def get_falso(url, headers=None, timeout=None):
-        raise requests.ConnectionError("sem internet")
+        if "ITUB4" in url:
+            raise requests.ConnectionError("sem internet")
+        return resposta_com_preco(50.0)
 
     monkeypatch.setattr(requests, "get", get_falso)
 
-    with pytest.raises(cotacao.CotacaoIndisponivel):
-        cotacao.buscar_cotacoes(["ITUB4"])
+    precos = cotacao.buscar_cotacoes(["ITUB4", "MGLU3"])
+
+    assert "ITUB4" not in precos
+    assert precos["MGLU3"] == Decimal("50.0")
 
 
-def test_buscar_cotacoes_status_de_erro(monkeypatch):
+def test_buscar_cotacoes_todos_falham_devolve_dicionario_vazio(monkeypatch):
     def get_falso(url, headers=None, timeout=None):
         return RespostaFalsa({}, status_ok=False)
 
     monkeypatch.setattr(requests, "get", get_falso)
 
-    with pytest.raises(cotacao.CotacaoIndisponivel):
-        cotacao.buscar_cotacoes(["ITUB4"])
+    assert cotacao.buscar_cotacoes(["ITUB4", "VALE3"]) == {}
 
 
 def test_atualizar_cotacoes_sucesso(tmp_path, monkeypatch):
@@ -135,10 +150,7 @@ def test_ct07_api_fora_do_ar_mantem_ultimo_preco_e_avisa(tmp_path, monkeypatch):
     conn = banco_de_teste(tmp_path)
     banco.salvar_ativo(conn, ativo("ITUB4", "Acao", "200", "30.00", "1.0"))
 
-    def buscar_com_falha(tickers):
-        raise cotacao.CotacaoIndisponivel("API fora do ar")
-
-    monkeypatch.setattr(cotacao, "buscar_cotacoes", buscar_com_falha)
+    monkeypatch.setattr(cotacao, "buscar_cotacoes", lambda tickers: {})
 
     resultado = cotacao.atualizar_cotacoes(conn)
 
@@ -155,6 +167,25 @@ def test_ct07_api_fora_do_ar_mantem_ultimo_preco_e_avisa(tmp_path, monkeypatch):
     manual = banco.buscar_ativo(conn, "ITUB4")
     assert manual["preco_atual"] == Decimal("31.50")
     assert manual["preco_origem"] == "manual"
+
+    conn.close()
+
+
+def test_atualizar_cotacoes_falha_parcial(tmp_path, monkeypatch):
+    conn = banco_de_teste(tmp_path)
+    banco.salvar_ativo(conn, ativo("ITUB4", "Acao", "200", "30.00", "0.5"))
+    banco.salvar_ativo(conn, ativo("VALE3", "Acao", "50", "62.00", "0.5"))
+
+    monkeypatch.setattr(cotacao, "buscar_cotacoes", lambda tickers: {"ITUB4": Decimal("31.00")})
+
+    resultado = cotacao.atualizar_cotacoes(conn)
+
+    assert resultado["atualizados"] == ["ITUB4"]
+    assert resultado["falhas"] == ["VALE3"]
+    assert "VALE3" in resultado["aviso"]
+
+    vale = banco.buscar_ativo(conn, "VALE3")
+    assert vale["preco_atual"] == Decimal("62.00")
 
     conn.close()
 
