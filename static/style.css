@@ -1,0 +1,94 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  margin: 24px;
+  color: #1c1c1c;
+  background: #fafafa;
+}
+
+h1 {
+  margin-bottom: 0;
+}
+
+.subtitulo {
+  margin-top: 4px;
+  color: #555;
+}
+
+section {
+  margin-bottom: 32px;
+}
+
+#resumo input {
+  width: 160px;
+  padding: 6px;
+  font-size: 1rem;
+}
+
+button {
+  padding: 6px 14px;
+  margin-left: 8px;
+  cursor: pointer;
+}
+
+.aviso {
+  color: #b00020;
+  font-weight: bold;
+}
+
+#form-ativo input,
+#form-ativo select {
+  padding: 6px;
+  margin-right: 8px;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  background: #fff;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 6px 8px;
+  text-align: right;
+  font-size: 0.9rem;
+}
+
+th:first-child, td:first-child,
+th:nth-child(2), td:nth-child(2) {
+  text-align: left;
+}
+
+thead th {
+  background: #f0f0f0;
+}
+
+tfoot td {
+  font-weight: bold;
+  background: #f7f7f7;
+}
+
+td input {
+  width: 90px;
+  padding: 4px;
+  text-align: right;
+}
+
+.status-aportar {
+  color: #0a6b0a;
+  font-weight: bold;
+}
+
+.status-nao-aportar {
+  color: #888;
+}
+
+#lista-ranking {
+  background: #fff;
+  padding: 12px 32px;
+  border: 1px solid #ddd;
+}

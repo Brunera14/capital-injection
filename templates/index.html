@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Capital Injection</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <h1>Capital Injection</h1>
+  <p class="subtitulo">Calculadora de aporte com rebalanceamento sem venda</p>
+
+  <section id="resumo">
+    <label for="input-aporte">Valor do aporte este mes (R$)</label>
+    <input type="text" id="input-aporte" value="0">
+    <button id="btn-calcular">Calcular</button>
+    <button id="btn-consolidar">Consolidar Aporte</button>
+
+    <p>Patrimonio atual: <strong id="total-atual">R$ 0,00</strong></p>
+    <p>Patrimonio apos o aporte: <strong id="total-pos">R$ 0,00</strong></p>
+    <p id="aviso-validacao" class="aviso"></p>
+  </section>
+
+  <section id="cadastro">
+    <h2>Adicionar ativo</h2>
+    <form id="form-ativo">
+      <input type="text" name="ticker" placeholder="Ticker" required>
+      <select name="tipo" required>
+        <option value="Acao">Acao</option>
+        <option value="FII">FII</option>
+        <option value="ETF">ETF</option>
+        <option value="RendaFixa">Renda Fixa</option>
+        <option value="Cripto">Cripto</option>
+      </select>
+      <input type="text" name="qtd" placeholder="Sua Qtd." required>
+      <input type="text" name="preco_atual" placeholder="Preco Atual (R$)" required>
+      <input type="text" name="pct_alvo" placeholder="% Alvo (ex.: 25)" required>
+      <button type="submit">Adicionar</button>
+    </form>
+  </section>
+
+  <section id="carteira">
+    <h2>Carteira</h2>
+    <table id="tabela-carteira">
+      <thead>
+        <tr>
+          <th>Ticker</th>
+          <th>Tipo</th>
+          <th>Sua Qtd.</th>
+          <th>% Alvo</th>
+          <th>Preco Atual</th>
+          <th>Valor Atual</th>
+          <th>% Atual</th>
+          <th>Valor Alvo (Pos-Aporte)</th>
+          <th>Necessidade de Aporte</th>
+          <th>Aporte Recomendado</th>
+          <th>Qtd. a comprar</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="corpo-carteira"></tbody>
+      <tfoot>
+        <tr id="linha-totais">
+          <td colspan="5">Total</td>
+          <td id="total-valor-atual"></td>
+          <td id="total-pct-atual"></td>
+          <td id="total-valor-alvo"></td>
+          <td id="total-necessidade"></td>
+          <td id="total-aporte-recomendado"></td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </section>
+
+  <section id="ranking">
+    <h2>Ranking de Prioridade de Aporte</h2>
+    <ol id="lista-ranking"></ol>
+  </section>
+
+  <section id="historico">
+    <h2>Historico de Aportes</h2>
+    <table id="tabela-historico">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Ticker</th>
+          <th>Qtd. Comprada</th>
+          <th>Preco</th>
+          <th>Valor Investido</th>
+        </tr>
+      </thead>
+      <tbody id="corpo-historico"></tbody>
+    </table>
+  </section>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
