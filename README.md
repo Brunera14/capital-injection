@@ -43,9 +43,9 @@ Protótipo interativo no Figma: [Design Screens for Capital Injection](https://w
 
 Essa fase não foi apagada, só encerrada. A pesquisa, as regras de negócio e as personas continuam valendo para a versão em código.
 
-## Documentação (fase anterior, Excel e Power BI)
+## Documentação
 
-A documentação completa dessa fase está em [`/docs`](docs/):
+A documentação completa do projeto, incluindo a fase anterior em Excel e Power BI e a fase atual em código, está em [`/docs`](docs/):
 
 | Seção | Conteúdo |
 |---|---|
@@ -81,6 +81,12 @@ As regras de negócio, a pesquisa de campo e as personas seguem válidas para a 
 |---|---|
 | Decisão de arquitetura documentada em ADR ([issue #88](https://github.com/Brunera14/capital-injection/issues/88)) | Feita |
 | GitHub reorganizado, board e milestones reestruturados a partir da Sprint 09 | Feita |
+| Esqueleto do projeto ([issue #82](https://github.com/Brunera14/capital-injection/issues/82)) | Feita |
+| Motor de cálculo em Python, com todos os casos de teste aprovados ([issue #83](https://github.com/Brunera14/capital-injection/issues/83)) | Feita |
+| Banco SQLite, cadastro de ativos, consolidação atômica e histórico ([issue #86](https://github.com/Brunera14/capital-injection/issues/86)) | Feita |
+| Tela de uma página, ligada às rotas do backend ([issue #85](https://github.com/Brunera14/capital-injection/issues/85)) | Feita |
+| Cotações via brapi.dev, com preço manual de reserva ([issue #84](https://github.com/Brunera14/capital-injection/issues/84)) | Feita |
+| Testes completos e validação final ([issue #87](https://github.com/Brunera14/capital-injection/issues/87)) | A fazer |
 
 ## Roadmap do PI4
 
@@ -93,12 +99,34 @@ As regras de negócio, a pesquisa de campo e as personas seguem válidas para a 
 
 O acompanhamento das tarefas é feito no [GitHub Projects](https://github.com/users/Brunera14/projects/2).
 
+## Como rodar
+
+```
+python -m venv .venv
+.venv\Scripts\activate          (Windows)
+pip install -r requirements.txt
+copy .env.example .env          (depois preencha BRAPI_TOKEN)
+python app.py                   (abra http://127.0.0.1:5000)
+pytest                          (roda os testes)
+```
+
+O `BRAPI_TOKEN` é opcional para alguns ativos (PETR4, MGLU3, VALE3 e ITUB4 funcionam sem token no plano gratuito da brapi.dev). Sem token ou sem internet, o sistema mantém o último preço salvo e aceita preço manual.
+
 ## Estrutura do repositório
 
 ```
 .
-├── docs/          documentação da fase Excel e Power BI (Markdown)
-│   └── img/       figuras e capturas de tela
-├── src/           motor de cálculo e camada de visualização (Python e SQLite), em construção na Sprint 09
-└── README.md
+├── app.py               rotas do Flask
+├── calculo.py           motor de cálculo (funções puras)
+├── banco.py             acesso ao SQLite (ativos, histórico, consolidação)
+├── cotacao.py            consulta à brapi.dev com preço manual de reserva
+├── seed_exemplo.py       carrega uma carteira de exemplo no banco
+├── templates/index.html  página única
+├── static/               app.js e style.css
+├── tests/                test_calculo.py, test_banco.py, test_cotacao.py
+├── docs/                 documentação completa do projeto (Markdown)
+│   └── img/              figuras e capturas de tela
+├── requirements.txt
+├── .env.example
+└── .gitignore
 ```

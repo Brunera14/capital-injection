@@ -16,11 +16,11 @@ O motor foi reescrito em Python, com as mesmas regras e fórmulas (seção 3), e
 
 | Parte | Issue | Sprint | Situação |
 |---|---|---|---|
-| Ambiente e esqueleto do projeto | #82 | 09 | A fazer |
-| Motor de cálculo em Python, validado contra o Excel | #83 | 10 | A fazer |
-| Cotação de ativos via brapi.dev | #84 | 10 | A fazer |
-| Tela de entrada e visualização | #85 | 11 | A fazer |
-| Consolidação de aporte e histórico (SQLite) | #86 | 11 | A fazer |
+| Ambiente e esqueleto do projeto | #82 | 09 | Feita |
+| Motor de cálculo em Python, validado contra o Excel | #83 | 10 | Feita |
+| Cotação de ativos via brapi.dev | #84 | 10 | Feita |
+| Tela de entrada e visualização | #85 | 11 | Feita |
+| Consolidação de aporte e histórico (SQLite) | #86 | 11 | Feita |
 | Testes completos e validação | #87 | 12 | A fazer |
 
 ## 7.3. Ordem de Construção
