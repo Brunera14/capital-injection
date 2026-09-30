@@ -13,8 +13,10 @@ app = Flask(__name__)
 
 CAMPOS_DECIMAL_RESULTADO = {
     "preco", "valor_atual", "pct_atual", "valor_alvo",
-    "defasagem", "aporte_recomendado", "qtd_comprar", "valor_investido",
+    "defasagem", "aporte_recomendado", "qtd_comprar", "valor_investido", "sobra",
 }
+
+TIPO_PADRAO = "Acao"
 
 
 def get_conn():
@@ -72,15 +74,16 @@ def montar_calculo(aporte_bruto):
     total_pos = total_atual + aporte
     for r in resultados:
         r["pct_atual"] = (r["valor_atual"] / total_atual) if total_atual > 0 else Decimal("0")
+        r["sobra"] = r["aporte_recomendado"] - r["valor_investido"]
 
     totais = {
         "total_atual": str(total_atual),
         "total_pos": str(total_pos),
         "soma_valor_atual": str(total_atual),
         "soma_valor_alvo": str(sum((r["valor_alvo"] for r in resultados), Decimal("0"))),
-        "soma_necessidade": str(sum((r["defasagem"] for r in resultados), Decimal("0"))),
         "soma_aporte_recomendado": str(sum((r["aporte_recomendado"] for r in resultados), Decimal("0"))),
         "soma_valor_investido": str(sum((r["valor_investido"] for r in resultados), Decimal("0"))),
+        "soma_sobra": str(sum((r["sobra"] for r in resultados), Decimal("0"))),
     }
 
     ranking = sorted(
@@ -107,17 +110,33 @@ def api_carteira():
 def api_salvar_ativo():
     dados = request.get_json(force=True)
     try:
-        ticker = str(dados["ticker"]).strip()
+        ticker = str(dados["ticker"]).strip().upper()
         if not ticker:
             raise ValueError("Informe o ticker do ativo.")
+
+        preco_origem = dados.get("preco_origem", "manual")
+        atualizado_em = dados.get("atualizado_em")
+        if dados.get("preco_atual") in (None, ""):
+            # Ativo novo: o preco vem da brapi. Sem cotacao, o ativo nao e salvo.
+            try:
+                preco = cotacao.buscar_cotacao(ticker)
+            except Exception:
+                preco = None
+            if preco is None:
+                raise ValueError("Ticker nao encontrado na brapi: " + ticker + ". Confira se digitou certo.")
+            preco_origem = "api"
+            atualizado_em = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            preco = ler_decimal(dados["preco_atual"], "Preco Atual")
+
         ativo = {
             "ticker": ticker,
-            "tipo": dados["tipo"],
+            "tipo": dados.get("tipo", TIPO_PADRAO),
             "qtd": ler_decimal(dados["qtd"], "Sua Qtd."),
-            "preco_atual": ler_decimal(dados["preco_atual"], "Preco Atual"),
+            "preco_atual": preco,
             "pct_alvo": ler_decimal(dados["pct_alvo"], "% Alvo"),
-            "preco_origem": dados.get("preco_origem", "manual"),
-            "atualizado_em": dados.get("atualizado_em") or datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "preco_origem": preco_origem,
+            "atualizado_em": atualizado_em or datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         }
     except (KeyError, ValueError) as erro:
         return jsonify({"erro": str(erro)}), 400
@@ -169,19 +188,94 @@ def api_atualizar_cotacoes():
     return jsonify(resultado)
 
 
+def ler_data(valor):
+    texto = str(valor or "").strip()
+    if not texto:
+        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    formatos = ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d", "%d/%m/%Y")
+    for formato in formatos:
+        try:
+            return datetime.strptime(texto, formato).strftime("%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            continue
+    raise ValueError("Data invalida. Use dia/mes/ano, por exemplo 15/01/2026.")
+
+
+def ler_linha_historico(dados):
+    ticker = str(dados.get("ticker", "")).strip().upper()
+    if not ticker:
+        raise ValueError("Informe o ticker.")
+    qtd = ler_decimal(dados.get("qtd_comprada"), "Qtd. Comprada")
+    preco = ler_decimal(dados.get("preco"), "Preco")
+    if qtd <= 0 or preco <= 0:
+        raise ValueError("Quantidade e preco precisam ser maiores que zero.")
+    return ler_data(dados.get("data")), ticker, qtd, preco
+
+
+def alterar_historico(funcao, *args):
+    try:
+        funcao(get_conn(), *args)
+    except ValueError as erro:
+        return jsonify({"erro": str(erro)}), 400
+    return jsonify({"ok": True})
+
+
 @app.route("/api/historico", methods=["GET"])
 def api_historico():
     historico = banco.listar_historico(get_conn())
-    return jsonify([
-        {
-            "data": h["data"],
-            "ticker": h["ticker"],
-            "qtd_comprada": str(h["qtd_comprada"]),
-            "preco": str(h["preco"]),
-            "valor_investido": str(h["valor_investido"]),
-        }
-        for h in historico
-    ])
+    return jsonify({
+        "linhas": [
+            {
+                "id": h["id"],
+                "data": h["data"],
+                "ticker": h["ticker"],
+                "qtd_comprada": str(h["qtd_comprada"]),
+                "preco": str(h["preco"]),
+                "valor_investido": str(h["valor_investido"]),
+            }
+            for h in historico
+        ],
+        **banco.estado_desfazer(get_conn()),
+    })
+
+
+@app.route("/api/historico", methods=["POST"])
+def api_adicionar_historico():
+    try:
+        campos = ler_linha_historico(request.get_json(force=True))
+    except ValueError as erro:
+        return jsonify({"erro": str(erro)}), 400
+    return alterar_historico(banco.adicionar_historico, *campos)
+
+
+@app.route("/api/historico/<int:id_linha>", methods=["PUT"])
+def api_editar_historico(id_linha):
+    try:
+        campos = ler_linha_historico(request.get_json(force=True))
+    except ValueError as erro:
+        return jsonify({"erro": str(erro)}), 400
+    return alterar_historico(banco.editar_historico, id_linha, *campos)
+
+
+@app.route("/api/historico/<int:id_linha>", methods=["DELETE"])
+def api_excluir_historico(id_linha):
+    return alterar_historico(banco.excluir_historico, id_linha)
+
+
+@app.route("/api/historico/excluir-bloco", methods=["POST"])
+def api_excluir_bloco_historico():
+    dados = request.get_json(force=True)
+    return alterar_historico(banco.excluir_bloco_historico, str(dados.get("data", "")))
+
+
+@app.route("/api/historico/desfazer", methods=["POST"])
+def api_desfazer_historico():
+    return alterar_historico(banco.desfazer)
+
+
+@app.route("/api/historico/refazer", methods=["POST"])
+def api_refazer_historico():
+    return alterar_historico(banco.refazer)
 
 
 if __name__ == "__main__":

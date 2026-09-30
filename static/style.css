@@ -2,93 +2,275 @@
   box-sizing: border-box;
 }
 
+/* Regra de cores: laranja = voce preenche, azul = calculado ou vem da API.
+   Vermelho so aparece em erro. */
+:root {
+  --azul: #1f3864;
+  --azul-claro: #e4eaf5;
+  --laranja: #c55a11;
+  --amarelo: #fff4d6;
+  --borda: #c8c8c8;
+  --erro: #b00020;
+}
+
 body {
-  font-family: Arial, Helvetica, sans-serif;
-  margin: 24px;
-  color: #1c1c1c;
-  background: #fafafa;
+  font-family: Calibri, Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  max-width: 1100px;
+  margin: 16px auto;
+  padding: 0 16px;
+  color: #000;
+  background: #fff;
 }
 
 h1 {
-  margin-bottom: 0;
+  margin: 0;
+  font-size: 1.4rem;
 }
 
 .subtitulo {
-  margin-top: 4px;
+  margin: 2px 0 8px;
   color: #555;
+  font-style: italic;
 }
 
-section {
-  margin-bottom: 32px;
+.legenda {
+  margin: 0 0 4px;
+  color: #555;
+  font-size: 0.85rem;
 }
 
-#resumo input {
-  width: 160px;
-  padding: 6px;
-  font-size: 1rem;
+.amostra {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin: 0 4px 0 12px;
+  vertical-align: middle;
+}
+
+.amostra:first-child {
+  margin-left: 0;
+}
+
+.amostra-laranja {
+  background: var(--laranja);
+}
+
+.amostra-azul {
+  background: var(--azul);
+}
+
+.faixa {
+  background: var(--azul);
+  color: #fff;
+  font-weight: bold;
+  padding: 4px 8px;
+  margin-top: 16px;
+}
+
+.entrada {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.rotulo-entrada {
+  background: var(--laranja);
+  color: #fff;
+  font-weight: bold;
+  padding: 5px 10px;
+}
+
+.campo-entrada {
+  width: 110px;
+  padding: 4px 8px;
+  text-align: right;
+  font: inherit;
+  font-weight: bold;
+  color: #0000ff;
+  background: var(--amarelo);
+  border: 1px solid var(--borda);
 }
 
 button {
-  padding: 6px 14px;
-  margin-left: 8px;
+  padding: 4px 12px;
+  font: inherit;
   cursor: pointer;
+  background: #f2f2f2;
+  border: 1px solid #999;
 }
 
 .aviso {
-  color: #b00020;
+  color: var(--erro);
   font-weight: bold;
+  margin: 4px 0;
 }
 
-#form-ativo input,
-#form-ativo select {
-  padding: 6px;
-  margin-right: 8px;
+.observacao {
+  margin: 0 0 4px;
+  color: #666;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.aviso:empty,
+.observacao:empty {
+  display: none;
+}
+
+.duas-tabelas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-start;
+  margin-top: 8px;
+}
+
+.titulo-tabela {
+  color: #555;
+  padding: 2px 0 4px;
 }
 
 table {
   border-collapse: collapse;
-  width: 100%;
   background: #fff;
 }
 
 th, td {
-  border: 1px solid #ddd;
-  padding: 6px 8px;
+  border: 1px solid var(--borda);
+  padding: 4px 8px;
+  height: 28px;
   text-align: right;
-  font-size: 0.9rem;
+  white-space: nowrap;
 }
 
-th:first-child, td:first-child,
-th:nth-child(2), td:nth-child(2) {
-  text-align: left;
+td:first-child {
+  text-align: center;
 }
 
-thead th {
-  background: #f0f0f0;
-}
-
-tfoot td {
+th {
+  color: #fff;
   font-weight: bold;
-  background: #f7f7f7;
+  text-align: center;
+  height: 44px;
+  white-space: normal;
 }
 
-td input {
-  width: 90px;
-  padding: 4px;
-  text-align: right;
+.cab-laranja {
+  background: var(--laranja);
 }
 
-.status-aportar {
-  color: #0a6b0a;
-  font-weight: bold;
+.cab-azul {
+  background: var(--azul);
 }
 
-.status-nao-aportar {
+.col-qtd {
+  width: 64px;
+}
+
+.col-pct {
+  width: 72px;
+}
+
+.col-x {
+  width: 28px;
+  padding: 0;
+  text-align: center;
+}
+
+th.col-x,
+#linha-adicionar td.col-x,
+.linha-total td.col-x {
+  border: none;
+  background: #fff;
+}
+
+.vazio {
+  text-align: center;
   color: #888;
 }
 
-#lista-ranking {
+td input {
+  width: 100%;
+  padding: 2px 0;
+  font: inherit;
+  text-align: right;
+  border: none;
+  background: var(--amarelo);
+  color: #0000ff;
+  font-weight: bold;
+}
+
+#linha-adicionar td input {
+  font-weight: normal;
+}
+
+#linha-adicionar td:first-child input {
+  width: 100px;
+  text-align: center;
+}
+
+.linha-total td {
+  background: var(--azul-claro);
+  font-weight: bold;
+}
+
+.total-errado {
+  color: var(--erro);
+}
+
+.btn-remover {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  line-height: 1;
   background: #fff;
-  padding: 12px 32px;
-  border: 1px solid #ddd;
+  color: var(--erro);
+  border: 1px solid var(--borda);
+}
+
+.btn-adicionar {
+  margin-top: 6px;
+}
+
+.barra-historico {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+}
+
+button:disabled {
+  cursor: default;
+  color: #999;
+}
+
+#tabela-historico {
+  margin-top: 8px;
+}
+
+#tabela-historico td input {
+  width: 110px;
+}
+
+th.col-acoes {
+  border: none;
+  background: #fff;
+}
+
+td.col-acoes {
+  text-align: center;
+  white-space: nowrap;
+}
+
+td.col-acoes button {
+  padding: 1px 8px;
+  margin: 0 2px;
+  font-size: 0.85rem;
+}
+
+.cabecalho-bloco td {
+  background: var(--azul-claro);
+  font-weight: bold;
+  text-align: left;
 }

@@ -1,3 +1,4 @@
+import json
 import sqlite3
 from datetime import datetime
 from decimal import Decimal
@@ -35,6 +36,16 @@ def criar_tabelas(conn):
             qtd_comprada TEXT NOT NULL,
             preco TEXT NOT NULL,
             valor_investido TEXT NOT NULL
+        )
+        """
+    )
+    # Cada alteracao do historico vira uma operacao, usada por desfazer e refazer.
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS operacoes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            dados TEXT NOT NULL,
+            desfeita INTEGER NOT NULL DEFAULT 0
         )
         """
     )
@@ -115,6 +126,7 @@ def consolidar_aporte(conn, resultados, data=None):
         data = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     compras = [r for r in resultados if r["valor_investido"] > 0]
+    operacao = {"historico": [], "ativos": {}}
 
     try:
         for r in compras:
@@ -137,16 +149,225 @@ def consolidar_aporte(conn, resultados, data=None):
                     "UPDATE ativos SET qtd = ?, atualizado_em = ? WHERE ticker = ?",
                     (str(nova_qtd), data, ticker),
                 )
+                # Renda fixa (fora do MVP) nao entra no desfazer.
+                operacao["ativos"][ticker] = str(r["qtd_comprar"])
 
-            conn.execute(
+            cursor = conn.execute(
                 """
                 INSERT INTO historico (data, ticker, qtd_comprada, preco, valor_investido)
                 VALUES (?, ?, ?, ?, ?)
                 """,
                 (data, ticker, str(r["qtd_comprar"]), str(r["preco"]), str(r["valor_investido"])),
             )
+            operacao["historico"].append({
+                "id": cursor.lastrowid,
+                "antes": None,
+                "depois": {
+                    "data": data,
+                    "ticker": ticker,
+                    "qtd_comprada": str(r["qtd_comprar"]),
+                    "preco": str(r["preco"]),
+                    "valor_investido": str(r["valor_investido"]),
+                },
+            })
+
+        if operacao["historico"]:
+            _registrar_operacao(conn, operacao)
     except Exception:
         conn.rollback()
         raise
     else:
         conn.commit()
+
+
+def _registrar_operacao(conn, operacao):
+    # Uma alteracao nova descarta o que ainda podia ser refeito.
+    conn.execute("DELETE FROM operacoes WHERE desfeita = 1")
+    conn.execute("INSERT INTO operacoes (dados) VALUES (?)", (json.dumps(operacao),))
+
+
+def _aplicar_ativos(conn, ativos, sinal):
+    for ticker, delta in ativos.items():
+        linha = conn.execute("SELECT qtd FROM ativos WHERE ticker = ?", (ticker,)).fetchone()
+        ajuste = sinal * Decimal(delta)
+        if linha is None:
+            # Ativo ja removido da carteira: nao ha quantidade para ajustar.
+            continue
+        nova_qtd = Decimal(linha["qtd"]) + ajuste
+        if nova_qtd < 0:
+            raise ValueError("A quantidade de " + ticker + " ficaria negativa.")
+        conn.execute("UPDATE ativos SET qtd = ? WHERE ticker = ?", (str(nova_qtd), ticker))
+
+
+def _aplicar_operacao(conn, operacao, inverso):
+    _aplicar_ativos(conn, operacao["ativos"], -1 if inverso else 1)
+
+    for mudanca in operacao["historico"]:
+        antes, depois = mudanca["antes"], mudanca["depois"]
+        if inverso:
+            antes, depois = depois, antes
+        if depois is None:
+            conn.execute("DELETE FROM historico WHERE id = ?", (mudanca["id"],))
+        elif antes is None:
+            conn.execute(
+                """
+                INSERT INTO historico (id, data, ticker, qtd_comprada, preco, valor_investido)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (mudanca["id"], depois["data"], depois["ticker"], depois["qtd_comprada"],
+                 depois["preco"], depois["valor_investido"]),
+            )
+        else:
+            conn.execute(
+                """
+                UPDATE historico
+                SET data = ?, ticker = ?, qtd_comprada = ?, preco = ?, valor_investido = ?
+                WHERE id = ?
+                """,
+                (depois["data"], depois["ticker"], depois["qtd_comprada"],
+                 depois["preco"], depois["valor_investido"], mudanca["id"]),
+            )
+
+
+def _linha_historico_texto(data, ticker, qtd, preco):
+    return {
+        "data": data,
+        "ticker": ticker,
+        "qtd_comprada": str(qtd),
+        "preco": str(preco),
+        "valor_investido": str(qtd * preco),
+    }
+
+
+def _exigir_ativo(conn, ticker):
+    if conn.execute("SELECT 1 FROM ativos WHERE ticker = ?", (ticker,)).fetchone() is None:
+        raise ValueError("O ativo " + ticker + " nao esta na carteira.")
+
+
+def _somar_delta(ativos, ticker, delta):
+    ativos[ticker] = str(Decimal(ativos.get(ticker, "0")) + delta)
+
+
+def _executar_alteracao(conn, operacao):
+    # Aplica e registra tudo em uma transacao so: ou vai tudo, ou nada.
+    try:
+        _aplicar_operacao(conn, operacao, inverso=False)
+        _registrar_operacao(conn, operacao)
+    except Exception:
+        conn.rollback()
+        raise
+    else:
+        conn.commit()
+
+
+def adicionar_historico(conn, data, ticker, qtd, preco):
+    _exigir_ativo(conn, ticker)
+    nova = _linha_historico_texto(data, ticker, qtd, preco)
+    try:
+        cursor = conn.execute(
+            """
+            INSERT INTO historico (data, ticker, qtd_comprada, preco, valor_investido)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (nova["data"], nova["ticker"], nova["qtd_comprada"], nova["preco"], nova["valor_investido"]),
+        )
+        id_novo = cursor.lastrowid
+        ativos = {ticker: str(qtd)}
+        _aplicar_ativos(conn, ativos, 1)
+        _registrar_operacao(conn, {
+            "historico": [{"id": id_novo, "antes": None, "depois": nova}],
+            "ativos": ativos,
+        })
+    except Exception:
+        conn.rollback()
+        raise
+    else:
+        conn.commit()
+    return id_novo
+
+
+def editar_historico(conn, id_linha, data, ticker, qtd, preco):
+    antiga = conn.execute("SELECT * FROM historico WHERE id = ?", (id_linha,)).fetchone()
+    if antiga is None:
+        raise ValueError("Linha do historico nao encontrada.")
+
+    _exigir_ativo(conn, ticker)
+    antes = {k: antiga[k] for k in ("data", "ticker", "qtd_comprada", "preco", "valor_investido")}
+    depois = _linha_historico_texto(data, ticker, qtd, preco)
+
+    ativos = {}
+    _somar_delta(ativos, antes["ticker"], -Decimal(antes["qtd_comprada"]))
+    _somar_delta(ativos, ticker, qtd)
+    ativos = {t: d for t, d in ativos.items() if Decimal(d) != 0}
+
+    operacao = {
+        "historico": [{"id": id_linha, "antes": antes, "depois": depois}],
+        "ativos": ativos,
+    }
+    _executar_alteracao(conn, operacao)
+
+
+def excluir_historico(conn, id_linha):
+    antiga = conn.execute("SELECT * FROM historico WHERE id = ?", (id_linha,)).fetchone()
+    if antiga is None:
+        raise ValueError("Linha do historico nao encontrada.")
+
+    antes = {k: antiga[k] for k in ("data", "ticker", "qtd_comprada", "preco", "valor_investido")}
+    operacao = {
+        "historico": [{"id": id_linha, "antes": antes, "depois": None}],
+        "ativos": {antes["ticker"]: str(-Decimal(antes["qtd_comprada"]))},
+    }
+    _executar_alteracao(conn, operacao)
+
+
+def desfazer(conn):
+    linha = conn.execute(
+        "SELECT id, dados FROM operacoes WHERE desfeita = 0 ORDER BY id DESC LIMIT 1"
+    ).fetchone()
+    if linha is None:
+        raise ValueError("Nao ha nada para desfazer.")
+    try:
+        _aplicar_operacao(conn, json.loads(linha["dados"]), inverso=True)
+        conn.execute("UPDATE operacoes SET desfeita = 1 WHERE id = ?", (linha["id"],))
+    except Exception:
+        conn.rollback()
+        raise
+    else:
+        conn.commit()
+
+
+def refazer(conn):
+    linha = conn.execute(
+        "SELECT id, dados FROM operacoes WHERE desfeita = 1 ORDER BY id ASC LIMIT 1"
+    ).fetchone()
+    if linha is None:
+        raise ValueError("Nao ha nada para refazer.")
+    try:
+        _aplicar_operacao(conn, json.loads(linha["dados"]), inverso=False)
+        conn.execute("UPDATE operacoes SET desfeita = 0 WHERE id = ?", (linha["id"],))
+    except Exception:
+        conn.rollback()
+        raise
+    else:
+        conn.commit()
+
+
+def estado_desfazer(conn):
+    pode_desfazer = conn.execute("SELECT 1 FROM operacoes WHERE desfeita = 0 LIMIT 1").fetchone()
+    pode_refazer = conn.execute("SELECT 1 FROM operacoes WHERE desfeita = 1 LIMIT 1").fetchone()
+    return {"pode_desfazer": pode_desfazer is not None, "pode_refazer": pode_refazer is not None}
+
+
+def excluir_bloco_historico(conn, data):
+    linhas = conn.execute("SELECT * FROM historico WHERE data = ? ORDER BY id", (data,)).fetchall()
+    if not linhas:
+        raise ValueError("Bloco do historico nao encontrado.")
+
+    mudancas = []
+    ativos = {}
+    for linha in linhas:
+        antes = {k: linha[k] for k in ("data", "ticker", "qtd_comprada", "preco", "valor_investido")}
+        mudancas.append({"id": linha["id"], "antes": antes, "depois": None})
+        _somar_delta(ativos, antes["ticker"], -Decimal(antes["qtd_comprada"]))
+
+    _executar_alteracao(conn, {"historico": mudancas, "ativos": ativos})

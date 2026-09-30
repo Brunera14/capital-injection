@@ -8,96 +8,109 @@
 </head>
 <body>
   <h1>Capital Injection</h1>
-  <p class="subtitulo">Calculadora de aporte com rebalanceamento sem venda</p>
+  <p class="subtitulo">Rebalanceamento sem venda</p>
+  <p class="legenda"><span class="amostra amostra-laranja"></span>você preenche
+    <span class="amostra amostra-azul"></span>calculado ou vem da API</p>
 
-  <section id="resumo">
-    <label for="input-aporte">Valor do aporte este mes (R$)</label>
-    <input type="text" id="input-aporte" value="0">
+  <div class="faixa">1. ENTRADA</div>
+  <div class="entrada">
+    <label for="input-aporte" class="rotulo-entrada">Valor do aporte (R$)</label>
+    <input type="text" id="input-aporte" class="campo-entrada" value="0">
     <button id="btn-calcular">Calcular</button>
     <button id="btn-consolidar">Consolidar Aporte</button>
-    <button id="btn-atualizar-cotacoes">Atualizar cotacoes</button>
+    <button id="btn-atualizar-cotacoes">Atualizar cotações</button>
+  </div>
+  <p id="aviso-validacao" class="aviso"></p>
+  <p id="aviso-cotacao" class="aviso"></p>
 
-    <p>Patrimonio atual: <strong id="total-atual">R$ 0,00</strong></p>
-    <p>Patrimonio apos o aporte: <strong id="total-pos">R$ 0,00</strong></p>
-    <p id="aviso-validacao" class="aviso"></p>
-    <p id="aviso-cotacao" class="aviso"></p>
-  </section>
+  <div class="faixa">2. CARTEIRA</div>
+  <div class="duas-tabelas">
+    <div>
+      <div class="titulo-tabela">Planilha de input</div>
+      <form id="form-ativo"></form>
+      <table id="tabela-carteira">
+        <thead>
+          <tr>
+            <th class="cab-laranja">Ticker</th>
+            <th class="cab-azul">Preço Atual</th>
+            <th class="cab-laranja col-qtd">Qtd.</th>
+            <th class="cab-azul">Em carteira</th>
+            <th class="cab-laranja col-pct">% Alvo</th>
+            <th class="cab-azul">% Atual</th>
+            <th class="cab-azul">Defasagem</th>
+            <th class="col-x"></th>
+          </tr>
+        </thead>
+        <tbody id="corpo-carteira"></tbody>
+        <tfoot>
+          <tr id="linha-adicionar">
+            <td><input type="text" form="form-ativo" name="ticker" placeholder="Novo ticker" required></td>
+            <td class="vazio">-</td>
+            <td class="col-qtd"><input type="text" form="form-ativo" name="qtd" placeholder="Qtd." required></td>
+            <td class="vazio">-</td>
+            <td class="col-pct"><input type="text" form="form-ativo" name="pct_alvo" placeholder="%" required></td>
+            <td class="vazio">-</td>
+            <td class="vazio">-</td>
+            <td class="col-x"></td>
+          </tr>
+          <tr class="linha-total">
+            <td>TOTAL</td>
+            <td></td>
+            <td></td>
+            <td id="total-valor-carteira">-</td>
+            <td id="total-pct-alvo">-</td>
+            <td id="total-pct-atual">-</td>
+            <td></td>
+            <td class="col-x"></td>
+          </tr>
+        </tfoot>
+      </table>
+      <button type="submit" form="form-ativo" class="btn-adicionar">+ Adicionar ativo</button>
+    </div>
 
-  <section id="cadastro">
-    <h2>Adicionar ativo</h2>
-    <form id="form-ativo">
-      <input type="text" name="ticker" placeholder="Ticker" required>
-      <select name="tipo" required>
-        <option value="Acao">Acao</option>
-        <option value="FII">FII</option>
-        <option value="ETF">ETF</option>
-        <option value="RendaFixa">Renda Fixa</option>
-        <option value="Cripto">Cripto</option>
-      </select>
-      <input type="text" name="qtd" placeholder="Sua Qtd." required>
-      <input type="text" name="preco_atual" placeholder="Preco Atual (R$)" required>
-      <input type="text" name="pct_alvo" placeholder="% Alvo (ex.: 25)" required>
-      <button type="submit">Adicionar</button>
-    </form>
-  </section>
+    <div>
+      <div class="titulo-tabela">Planilha de Resultados</div>
+      <table id="tabela-resultados">
+        <thead>
+          <tr>
+            <th class="cab-azul">Ticker</th>
+            <th class="cab-azul">Aporte Recomendado</th>
+            <th class="cab-azul col-qtd">Qtd. a comprar</th>
+            <th class="cab-azul">Sobra</th>
+          </tr>
+        </thead>
+        <tbody id="corpo-resultados"></tbody>
+        <tfoot>
+          <tr class="linha-total">
+            <td>TOTAL</td>
+            <td id="total-aporte-recomendado">-</td>
+            <td></td>
+            <td id="total-sobra">-</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
 
-  <section id="carteira">
-    <h2>Carteira</h2>
-    <table id="tabela-carteira">
-      <thead>
-        <tr>
-          <th>Ticker</th>
-          <th>Tipo</th>
-          <th>Sua Qtd.</th>
-          <th>% Alvo</th>
-          <th>Preco Atual</th>
-          <th>Valor Atual</th>
-          <th>% Atual</th>
-          <th>Valor Alvo (Pos-Aporte)</th>
-          <th>Necessidade de Aporte</th>
-          <th>Aporte Recomendado</th>
-          <th>Qtd. a comprar</th>
-          <th>Status</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="corpo-carteira"></tbody>
-      <tfoot>
-        <tr id="linha-totais">
-          <td colspan="5">Total</td>
-          <td id="total-valor-atual"></td>
-          <td id="total-pct-atual"></td>
-          <td id="total-valor-alvo"></td>
-          <td id="total-necessidade"></td>
-          <td id="total-aporte-recomendado"></td>
-          <td></td>
-          <td></td>
-          <td></td>
-        </tr>
-      </tfoot>
-    </table>
-  </section>
-
-  <section id="ranking">
-    <h2>Ranking de Prioridade de Aporte</h2>
-    <ol id="lista-ranking"></ol>
-  </section>
-
-  <section id="historico">
-    <h2>Historico de Aportes</h2>
-    <table id="tabela-historico">
-      <thead>
-        <tr>
-          <th>Data</th>
-          <th>Ticker</th>
-          <th>Qtd. Comprada</th>
-          <th>Preco</th>
-          <th>Valor Investido</th>
-        </tr>
-      </thead>
-      <tbody id="corpo-historico"></tbody>
-    </table>
-  </section>
+  <div class="faixa">HISTÓRICO DE APORTES</div>
+  <div class="barra-historico">
+    <button id="btn-desfazer">Desfazer</button>
+    <button id="btn-refazer">Refazer</button>
+    <button id="btn-adicionar-historico">+ Adicionar linha</button>
+  </div>
+  <table id="tabela-historico">
+    <thead>
+      <tr>
+        <th class="cab-azul">Data</th>
+        <th class="cab-azul">Ticker</th>
+        <th class="cab-azul">Qtd. Comprada</th>
+        <th class="cab-azul">Preço</th>
+        <th class="cab-azul">Valor Investido</th>
+        <th class="col-acoes"></th>
+      </tr>
+    </thead>
+    <tbody id="corpo-historico"></tbody>
+  </table>
 
   <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>

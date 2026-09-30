@@ -24,25 +24,21 @@ Esta é a tela que define o MVP. Os números da Figura 2 (aporte de R$ 1.600,00 
 
 *Figura 3: Tela de perfil do usuário, com configurações de investimento, preferências e resumo da carteira.*
 
-## 5.4. Escopo da Interface em Código (MVP)
+## 5.4. Escopo da Interface em Código (esqueleto da calculadora)
 
-A primeira versão em código implementa **uma única página**, baseada na Figura 2. Home, Dashboard, Sobre e Perfil ficam para depois e não fazem parte da entrega mínima.
+A versão atual em código é o **esqueleto da calculadora**: uma única página em estilo planilha, com a regra de cores da planilha original (laranja é o que o usuário digita, azul é calculado ou vem da API). A interface final e as novas funcionalidades vêm depois. Home, Dashboard, Sobre e Perfil ficam para depois.
 
 **Elementos da página:**
 
 | Elemento | Comportamento |
 |---|---|
-| Valor do aporte este mês | Campo numérico em R$ (RF01) |
-| Patrimônio atual e patrimônio após o aporte | Calculados e exibidos ao lado do campo |
-| Tabela da carteira | Colunas: Ativo, Ticker, Tipo, Sua Qtd., % Alvo, Preço Atual, Valor Atual, % Atual, Valor Alvo (Pós-Aporte), Necessidade de Aporte, Aporte Recomendado, Qtd. a comprar, Status |
-| Células editáveis | Sua Qtd., % Alvo e Preço Atual (destacadas, como na Figura 2) |
-| Linha de totais | Soma dos valores e dos percentuais |
-| Validação da soma de % Alvo | Aviso visível quando a soma não é 100% (RN03), com o cálculo bloqueado |
-| Botão "Calcular" | Gera o ranking sem gravar nada |
-| Botão "Consolidar Aporte" | Confirma o aporte, atualiza quantidades e grava o histórico (RN07) |
-| Botão "Atualizar cotações" | Busca os preços na API (seção 4.4) |
-| Ranking de prioridade | Lista ordenada por defasagem com o valor recomendado de cada ativo (RF08) |
-| Histórico de aportes | Tabela com data, ticker, quantidade, preço e valor investido (RF12) |
-| Ativos "NÃO APORTAR" | Mostrados com a necessidade de aporte vazia, como na Figura 2 (MGLU3) |
+| Valor do aporte | Campo em R$ (RF01), com os botões Calcular, Consolidar Aporte e Atualizar cotações ao lado |
+| Planilha de input | Colunas: Ticker, Preço Atual (vem da API), Qtd. (editável), Em carteira, % Alvo (editável), % Atual e Defasagem. Só bolsa por enquanto: o tipo do ativo não aparece e é sempre "Ação" |
+| Adicionar e remover ativo | Linha de cadastro com ticker, quantidade e % Alvo (o preço vem da brapi; ticker não encontrado não é salvo) e um "x" por linha para remover |
+| Linha de totais | Valor em carteira e soma do % Alvo, em vermelho quando a soma não é 100% (RN03), com o cálculo bloqueado |
+| Planilha de Resultados | Colunas: Ticker, Aporte Recomendado, Qtd. a comprar e Sobra, ordenada pela maior defasagem. Ativos sem aporte mostram "-". A linha de total soma o aporte e as sobras |
+| Consolidar Aporte | Confirma o aporte, atualiza quantidades e grava o histórico (RN07) |
+| Atualizar cotações | Busca os preços na API (seção 4.4) |
+| Histórico de aportes | Agrupado em blocos por aporte, com data, ticker, quantidade, preço e valor investido (RF12). Permite editar, excluir (linha ou bloco inteiro) e adicionar linhas à mão, sempre ajustando a carteira, além de Desfazer e Refazer |
 
 **Fora do escopo do MVP:** login, gráficos, tema claro, telas de Home, Dashboard, Sobre e Perfil, importação de arquivos.
