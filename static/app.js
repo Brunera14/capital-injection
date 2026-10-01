@@ -7,6 +7,11 @@ function moeda(valorTexto) {
   return Number(valorTexto).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+// Converte a fracao guardada (0.28) em percentual para mostrar (28), sem sujeira de casas decimais.
+function pctParaTela(fracaoTexto) {
+  return Number((Number(fracaoTexto) * 100).toFixed(2));
+}
+
 function percentual(valorTexto) {
   if (valorTexto === undefined || valorTexto === null) return "-";
   const numero = Number(valorTexto) * 100;
@@ -184,7 +189,7 @@ function limparTotais() {
 function renderTotalPctAlvo() {
   const totalCarteira = carteira.reduce((acc, a) => acc + Number(a.qtd) * Number(a.preco_atual), 0);
   document.getElementById("total-valor-carteira").textContent = moeda(totalCarteira);
-  const soma = carteira.reduce((acc, a) => acc + Number(a.pct_alvo) * 100, 0);
+  const soma = carteira.reduce((acc, a) => acc + pctParaTela(a.pct_alvo), 0);
   const celula = document.getElementById("total-pct-alvo");
   celula.textContent = soma.toFixed(1).replace(".", ",") + "%";
   celula.classList.toggle("total-errado", Math.abs(soma - 100) > 0.001);
@@ -203,7 +208,7 @@ function renderCarteira(resultados) {
       "<td>" + moeda(a.preco_atual) + "</td>" +
       "<td class=\"col-qtd\"><input type=\"text\" data-ticker=\"" + a.ticker + "\" data-campo=\"qtd\" value=\"" + a.qtd + "\"></td>" +
       "<td>" + moeda(Number(a.qtd) * Number(a.preco_atual)) + "</td>" +
-      "<td class=\"col-pct\"><input type=\"text\" data-ticker=\"" + a.ticker + "\" data-campo=\"pct_alvo\" value=\"" + (Number(a.pct_alvo) * 100) + "\"></td>" +
+      "<td class=\"col-pct\"><input type=\"text\" data-ticker=\"" + a.ticker + "\" data-campo=\"pct_alvo\" value=\"" + pctParaTela(a.pct_alvo) + "\"></td>" +
       "<td>" + (r ? percentual(r.pct_atual) : "-") + "</td>" +
       "<td>" + (r && r.status === APORTAR ? moeda(r.defasagem) : "-") + "</td>" +
       "<td class=\"col-x\"><button class=\"btn-remover\" data-ticker=\"" + a.ticker + "\" title=\"Remover\">x</button></td>";
